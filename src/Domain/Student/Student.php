@@ -2,15 +2,17 @@
 
 namespace Alura\Calisthenics\Domain\Student;
 
+use Alura\Calisthenics\Domain\Email\Email;
 use Alura\Calisthenics\Domain\Video\Video;
+use Alura\Calisthenics\Domain\Student\WatchedVideos;
 use DateTimeInterface;
 use Ds\Map;
 
 class Student
 {
-    private string $email;
+    private Email $email;
     private DateTimeInterface $bd;
-    private Map $watchedVideos;
+    private WatchedVideos $watchedVideos;
     private string $fName;
     private string $lName;
     public string $street;
@@ -20,10 +22,10 @@ class Student
     public string $state;
     public string $country;
 
-    public function __construct(string $email, DateTimeInterface $bd, string $fName, string $lName, string $street, string $number, string $province, string $city, string $state, string $country)
+    public function __construct(Email $email, DateTimeInterface $bd, string $fName, string $lName, string $street, string $number, string $province, string $city, string $state, string $country)
     {
-        $this->watchedVideos = new Map();
-        $this->setEmail($email);
+        $this->watchedVideos = new WatchedVideos();
+        $this->$email = $email;
         $this->bd = $bd;
         $this->fName = $fName;
         $this->lName = $lName;
@@ -40,15 +42,6 @@ class Student
         return "{$this->fName} {$this->lName}";
     }
 
-    private function setEmail(string $email)
-    {
-        if (filter_var($email, FILTER_VALIDATE_EMAIL) !== false) {
-            $this->email = $email;
-        } else {
-            throw new \InvalidArgumentException('Invalid e-mail address');
-        }
-    }
-
     public function getEmail(): string
     {
         return $this->email;
@@ -61,7 +54,7 @@ class Student
 
     public function watch(Video $video, DateTimeInterface $date)
     {
-        $this->watchedVideos->put($video, $date);
+        $this->watchedVideos->add($video, $date);
     }
 
     public function hasAccess(): bool
@@ -74,10 +67,8 @@ class Student
     }
 
     private function firstVideoWasWatchedInLessThanLimit(): bool
-    {
-        $this->watchedVideos->sort(fn (DateTimeInterface $dateA, DateTimeInterface $dateB) => $dateA <=> $dateB);
-        /** @var DateTimeInterface $firstDate */
-        $firstDate = $this->watchedVideos->first()->value;
+    {        
+        $firstDate = $this->watchedVideos->dateOfFirstVideo();
         $today = new \DateTimeImmutable();
 
         if ($firstDate->diff($today)->days < 90) {
